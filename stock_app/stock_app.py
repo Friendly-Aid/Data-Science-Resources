@@ -2,7 +2,6 @@ import streamlit as st
 import yfinance as yf
 import matplotlib.pyplot as plt
 import pandas as pd
-import datetime
 
 # Streamlit title
 st.title("Stock Price Viewer with Custom Date Range")
