@@ -52,8 +52,8 @@ if ticker:
         first_close = filtered_data['Close'].iloc[0]
         percent_since_start = ((last_close - first_close) / first_close) * 100
 
-        col1.metric("Percent Above Mean", f"{float(last_close):.2f}", f"{float(percent_above_mean):.2f}%")
-        col2.metric("Percent Since Start", f"{float(last_close):.2f}", f"{float(percent_since_start):.2f}%")
+        col1.metric("Last Value Percent Above Mean", f"{float(last_close):.2f}", f"{float(percent_above_mean):.2f}%")
+        col2.metric("Last Value Percent Since Start", f"{float(last_close):.2f}", f"{float(percent_since_start):.2f}%")
 
         plt.figure(figsize=(10, 6))
         plt.plot(filtered_data.index, filtered_data['Close'], label="Close Price")
