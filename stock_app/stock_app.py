@@ -88,7 +88,7 @@ if ticker:
                 fig.update_layout(
                     yaxis=dict(
                         fixedrange=True,
-                        title="Stock Price" if tab!="Volume" else "Trade count",
+                        title="Trade count" if tab=="Volume" else "Estimated total sales" if tab=="Sales" else "Stock price",
                         tickprefix="$" if tab!="Volume" else "",
                     ),
                     xaxis=dict(
