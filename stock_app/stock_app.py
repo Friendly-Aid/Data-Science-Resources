@@ -51,6 +51,8 @@ if ticker:
 
         filtered_data = data.loc[start_date:end_date]
         filtered_data["Sales"]=((filtered_data["High"]+filtered_data["Low"])/2)*filtered_data["Volume"]
+        dividends=filtered_data[filtered_data["Dividends"]!=0]
+        split=filtered_data[filtered_data["Stock Splits"]!=0]
 
         for i,tab in enumerate(tab_names):
             with tabs[i]:
@@ -83,7 +85,7 @@ if ticker:
 
                 fig=go.Figure()
 
-                fig.add_trace(go.Scatter(x=filtered_data.index,y=filtered_data[tab],mode="lines+markers",marker=dict(size=2,color="rgba(255,255,255,1)"),line=dict(color="#1f77b4")))
+                fig.add_trace(go.Scatter(x=filtered_data.index,y=filtered_data[tab],mode="lines+markers",marker=dict(size=2,color="rgba(210,210,210,0.7)"),line=dict(color="#1f77b4"),name=f"{tab} data"))
 
                 fig.update_layout(
                     yaxis=dict(
@@ -101,6 +103,6 @@ if ticker:
                 )
                 fig.update_traces(
                     hovertemplate="%{x|%B %d, %Y}<br>%{text}<extra></extra>",
-                    text=['{} Units of {} traded<br>${} estimated total sales<br>Open price: ${}<br>Close price: ${}<br>High price: ${}<br>Low price: {}'.format(si_format(float(v),2).replace(" ","").replace("G","B"), ticker, si_format(float(s),2).replace(" ","").replace("G","B"), si_format(float(o),2).replace(" ","").replace("G","B"), si_format(float(c),2).replace(" ","").replace("G","B"), si_format(float(h),2).replace(" ","").replace("G","B"), si_format(float(l),2).replace(" ","").replace("G","B")) for v, s, o, c, h, l in
-                          filtered_data[['Volume','Sales', 'Open', 'Close', 'High', 'Low']].values])
+                    text=[(f'Stock split of {si_format(float(ss), precision=2).replace(" ","").replace("G","B")}<br>' if ss!=0 else "")+f'{si_format(float(v), precision=2).replace(" ","").replace("G","B")} Units of {ticker} traded'+(f'<br>Dividend: ${si_format(float(d), precision=2).replace(" ","").replace("G","B")}' if d!=0 else "")+f'<br>${si_format(float(s), precision=2).replace(" ","").replace("G","B")} estimated total sales'+f'<br>Open price: ${si_format(float(o), precision=2).replace(" ","").replace("G","B")}'+f'<br>Close price: ${si_format(float(c), precision=2).replace(" ","").replace("G","B")}'+f'<br>Highest price: ${si_format(float(h), precision=2).replace(" ","").replace("G","B")}'+f'<br>Lowest price: {si_format(float(l), precision=2).replace(" ","").replace("G","B")}' for v, s, o, c, h, l, d, ss in filtered_data[['Volume','Sales', 'Open', 'Close', 'High', 'Low', "Dividends", "Stock Splits"]].values])
+
                 st.plotly_chart(fig,use_container_width=True)
