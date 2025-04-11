@@ -85,7 +85,7 @@ if ticker:
 
                 fig=go.Figure()
 
-                fig.add_trace(go.Scatter(x=filtered_data.index,y=filtered_data[tab],mode="lines+markers",marker=dict(size=2,color="rgba(210,210,210,0.7)"),line=dict(color="#1f77b4"),name=f"{tab} data"))
+                fig.add_trace(go.Scatter(x=filtered_data.index,y=filtered_data[tab],mode="lines+markers",marker=dict(size=2,color="rgba(255,255,255,0.9)"),line=dict(color="#1f77b4"),name=f"{tab} data"))
 
                 fig.update_layout(
                     yaxis=dict(
