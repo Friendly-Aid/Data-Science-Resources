@@ -1,36 +1,40 @@
 import streamlit as st
 import yfinance as yf
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import pandas as pd
+from si_prefix import si_format
 
+st.set_page_config(layout="wide")
 st.title("Stock Price Viewer with Custom Date Range")
+st.divider()
 
 sp500_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 tables = pd.read_html(sp500_url)
 sp500_table = tables[0]
 tickers = sp500_table['Symbol'].tolist()
-ticker = st.selectbox("Select Stock Ticker", options=tickers)
-
+col1,col2,col3=st.columns(3)
+ticker = col1.selectbox("Select Stock Ticker", options=tickers)
+st.divider()
 @st.cache_data
-def get_stock_data(ticker):
-    stock_data = yf.download(ticker)
-    return stock_data
+def get_data(ticker):
+    ticker = yf.Ticker(ticker)
+    data = ticker.history(period="max")
+    return data
 
 if ticker:
-    stock_data = get_stock_data(ticker)
+    data = get_data(ticker)
+    data.index=pd.to_datetime(data.index).tz_localize(None)
+    earliest_date = data.index.min()
+    latest_date = data.index.max()
 
-    earliest_date = stock_data.index.min().date()
-    latest_date = stock_data.index.max().date()
-
-    col1,col2=st.columns(2)
-    start_date = col1.date_input(
+    start_date = col2.date_input(
         "Start Date",
         value=earliest_date,
         min_value=earliest_date,
         max_value=latest_date
     )
 
-    end_date = col2.date_input(
+    end_date = col3.date_input(
         "End Date",
         value=latest_date,
         min_value=earliest_date,
@@ -42,26 +46,61 @@ if ticker:
     elif (end_date - start_date).days < 10:
         st.error("The date range must be at least 10 days.")
     else:
-        filtered_data = stock_data.loc[start_date:end_date]
-        rolling_mean = filtered_data['Close'].rolling(window=10).mean()
+        tab_names=["Sales","Open","Close","High","Low","Volume"]
+        tabs = st.tabs(tab_names)
 
-        last_close = filtered_data['Close'].iloc[-1]
-        mean_close = filtered_data['Close'].mean()
-        percent_above_mean = ((last_close - mean_close) / mean_close) * 100
+        filtered_data = data.loc[start_date:end_date]
+        filtered_data["Sales"]=((filtered_data["High"]+filtered_data["Low"])/2)*filtered_data["Volume"]
 
-        first_close = filtered_data['Close'].iloc[0]
-        percent_since_start = ((last_close - first_close) / first_close) * 100
+        for i,tab in enumerate(tab_names):
+            with tabs[i]:
+                last = filtered_data[tab].iloc[-1]
+                mean = filtered_data[tab].mean()
+                first = filtered_data[tab].iloc[0]
+                best = filtered_data[tab].max()
+                worst = filtered_data[tab].min()
 
-        col1.metric("Last Value Percent Above Mean", f"{float(last_close):.2f}", f"{float(percent_above_mean):.2f}%")
-        col2.metric("Last Value Percent Since Start", f"{float(last_close):.2f}", f"{float(percent_since_start):.2f}%")
+                with st.container(border=True):
+                    st.subheader("comparing values to mean")
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(filtered_data.index, filtered_data['Close'], label="Close Price")
-        plt.plot(filtered_data.index, rolling_mean, label="Rolled Close Price", color='#0ac80abf', linestyle='-')
-        plt.title(f"{ticker} Stock Price from {start_date} to {end_date}")
-        plt.xlabel("Date")
-        plt.ylabel("Price (USD)")
-        plt.grid(True)
-        plt.legend()
+                    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+                    if tab == "Volume":
+                        col1.metric(f"First value", f"{si_format(first,precision=2).replace(" ","").replace("G","B")}",f"{((first - mean) / mean) * 100:.2f}%")
+                        col5.metric(f"Last value", f"{si_format(last,precision=2).replace(" ","").replace("G","B")}",f"{((last - mean) / mean) * 100:.2f}%")
+                        col3.metric(f"Mean value", f"{si_format(mean, precision=2).replace(" ","").replace("G", "B")}")
+                        col2.metric(f"Best value", f"{si_format(best, precision=2).replace(" ","").replace("G","B")}",f"{((best - mean) / mean) * 100:.2f}%")
+                        col4.metric(f"Worst value", f"{si_format(worst, precision=2).replace(" ","").replace("G","B")}",f"{((worst - mean) / mean) * 100:.2f}%")
+                    else:
+                        col1.metric(f"First value", f"${si_format(float(first),precision=2).replace(" ","").replace("G","B")}",f"{((first - mean) / mean) * 100:.2f}%")
+                        col5.metric(f"Last value", f"${si_format(float(last),precision=2).replace(" ","").replace("G","B")}",f"{((last - mean) / mean) * 100:.2f}%")
+                        col3.metric(f"Mean value", f"${si_format(mean, precision=2).replace(" ","").replace("G", "B")}")
+                        col2.metric(f"Best value", f"${si_format(float(best), precision=2).replace(" ","").replace("G","B")}",f"{((best - mean) / mean) * 100:.2f}%")
+                        col4.metric(f"Worst value", f"${si_format(float(worst), precision=2).replace(" ","").replace("G","B")}",f"{((worst - mean) / mean) * 100:.2f}%")
 
-        st.pyplot(plt)
+                st.divider()
+
+                st.header(f"{ticker} Price History for {tab} values between: {start_date.strftime("%B %d, %Y")} and {end_date.strftime("%B %d, %Y")}",divider='gray')
+
+                fig=go.Figure()
+
+                fig.add_trace(go.Scatter(x=filtered_data.index,y=filtered_data[tab],mode="lines+markers",marker=dict(size=2,color="rgba(255,255,255,1)"),line=dict(color="#1f77b4")))
+
+                fig.update_layout(
+                    yaxis=dict(
+                        fixedrange=True,
+                        title="Stock Price" if tab!="Volume" else "Trade count",
+                        tickprefix="$" if tab!="Volume" else "",
+                    ),
+                    xaxis=dict(
+                        title="Date",
+                    ),
+                    modebar=dict(
+                        remove=['pan', 'select2d', 'lasso2d', 'zoomIn', 'zoomOut']
+                    ),
+                    margin=dict(l=0, r=0, b=0, t=0, pad=0),
+                )
+                fig.update_traces(
+                    hovertemplate="%{x|%B %d, %Y}<br>%{text}<extra></extra>",
+                    text=['{} Units of {} traded<br>${} estimated total sales<br>Open price: ${}<br>Close price: ${}<br>High price: ${}<br>Low price: {}'.format(si_format(float(v),2).replace(" ","").replace("G","B"), ticker, si_format(float(s),2).replace(" ","").replace("G","B"), si_format(float(o),2).replace(" ","").replace("G","B"), si_format(float(c),2).replace(" ","").replace("G","B"), si_format(float(h),2).replace(" ","").replace("G","B"), si_format(float(l),2).replace(" ","").replace("G","B")) for v, s, o, c, h, l in
+                          filtered_data[['Volume','Sales', 'Open', 'Close', 'High', 'Low']].values])
+                st.plotly_chart(fig,use_container_width=True)

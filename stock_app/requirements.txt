@@ -1,5 +1,6 @@
 pandas
-matplotlib
+plotly
 yfinance
 streamlit
 lxml
+si_prefix

@@ -1,5 +1,6 @@
 import yfinance as yf
 import pandas as pd
+import plotly.graph_objects as go
 
 # Fetch S&P 500 companies (just a sample of popular stocks)
 def get_sp500_tickers():
@@ -11,4 +12,11 @@ def get_sp500_tickers():
 
 # Fetch the list of S&P 500 tickers
 sp500_tickers = get_sp500_tickers()
-print(sp500_tickers[:10])  # Display the first 10 tickers
+ticker=sp500_tickers[0]
+ticker = yf.Ticker(ticker)
+data=ticker.history(period="1mo")
+print("making fig")
+fig=go.Figure()
+fig.add_trace(go.Scatter(x=data.index,y=data["Close"],mode="lines",name="test"))
+print("done making fig")
+fig.show()
