@@ -46,9 +46,11 @@ if ticker:
     elif (end_date - start_date).days < 10:
         st.error("The date range must be at least 10 days.")
     else:
+        #different data to track
         tab_names=["Sales","Open","Close","High","Low","Volume"]
         tabs = st.tabs(tab_names)
 
+        #prepairing data
         filtered_data = data.loc[start_date:end_date]
         filtered_data["Sales"]=((filtered_data["High"]+filtered_data["Low"])/2)*filtered_data["Volume"]
         dividends=filtered_data[filtered_data["Dividends"]!=0]
