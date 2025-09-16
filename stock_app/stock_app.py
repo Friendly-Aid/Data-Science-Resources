@@ -1,7 +1,9 @@
 import streamlit as st
 import yfinance as yf
+import requests
 import plotly.graph_objects as go
 import pandas as pd
+import time
 from si_prefix import si_format
 
 st.set_page_config(layout="wide")
@@ -9,7 +11,12 @@ st.title("Stock Price Viewer with Custom Date Range")
 st.divider()
 
 sp500_url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-tables = pd.read_html(sp500_url)
+headers = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0'
+}
+
+response = requests.get(sp500_url, headers=headers)
+tables = pd.read_html(response.text)
 sp500_table = tables[0]
 tickers = sp500_table['Symbol'].tolist()
 col1,col2,col3=st.columns(3)
@@ -17,7 +24,12 @@ ticker = col1.selectbox("Select Stock Ticker", options=tickers)
 st.divider()
 @st.cache_data
 def get_data(ticker):
-    ticker = yf.Ticker(ticker)
+    ticker=None
+    while not ticker:
+        try:
+            ticker = yf.Ticker(ticker)
+        except:
+            time.sleep(1)
     data = ticker.history(period="max")
     return data
 
